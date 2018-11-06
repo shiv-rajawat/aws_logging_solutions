@@ -2,7 +2,7 @@ resource "aws_iam_role" "lambda_execution_role" {
   name = "lambda_execution_role"
 
   assume_role_policy = <<EOF
-  {
+{
     "Version": "2012-10-17",
     "Statement": [
       {
@@ -20,10 +20,10 @@ EOF
 
 resource "aws_iam_role_policy" "lambda_execution_policy" {
   name = "lambda_execution_policy"
-  role = "${aws_iam_role.example.id}"
+  role = "${aws_iam_role.lambda_execution_role.id}"
 
   policy = <<EOF
-  {
+{
       "Version": "2012-10-17",
       "Statement": [
           {
@@ -48,18 +48,18 @@ resource "aws_iam_role_policy" "lambda_execution_policy" {
               "Resource": "*"
           }
       ]
-  }
+}
 EOF
 }
 
 resource "aws_s3_bucket" "logging_bucket" {
-  bucket = "my_logging_bucket"
+  bucket = "${var.bucket_name}"
 }
 
 resource "aws_s3_bucket_policy" "logging_bucket" {
   bucket = "${aws_s3_bucket.logging_bucket.id}"
   policy =<<POLICY
-  {
+{
       "Version": "2012-10-17",
       "Statement": [
           {
@@ -68,7 +68,7 @@ resource "aws_s3_bucket_policy" "logging_bucket" {
                   "Service": "logs.us-east-2.amazonaws.com"
               },
               "Action": "s3:GetBucketAcl",
-              "Resource": "arn:aws:s3:::my_logging_bucket"
+              "Resource": "arn:aws:s3:::${var.bucket_name}"
           },
           {
               "Effect": "Allow",
@@ -76,7 +76,7 @@ resource "aws_s3_bucket_policy" "logging_bucket" {
                   "Service": "logs.us-east-2.amazonaws.com"
               },
               "Action": "s3:PutObject",
-              "Resource": "arn:aws:s3:::my_logging_bucket/random/*",
+              "Resource": "arn:aws:s3:::${var.bucket_name}/random/*",
               "Condition": {
                   "StringEquals": {
                       "s3:x-amz-acl": "bucket-owner-full-control"
@@ -84,16 +84,16 @@ resource "aws_s3_bucket_policy" "logging_bucket" {
               }
           }
       ]
-  }
+}
 POLICY
 }
 
 resource "aws_lambda_function" "check_foo" {
     filename = "lambda_function_payload.zip"
-    function_name = "${function_name}"
+    function_name = "${var.function_name}"
     role = "${aws_iam_role.lambda_execution_role.arn}"
     handler = "lambda_code.lambda_handler"
-    runtime = "python2.7"
+    runtime = "python3.6"
 }
 
 resource "aws_cloudwatch_event_rule" "every_five_minutes" {
